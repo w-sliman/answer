@@ -1,0 +1,246 @@
+version: stress_v1
+description: >
+  Stress test for the v1 architecture. 15 questions chosen to exercise
+  the agentic capabilities the v0 set under-tests: multi-query planning
+  (3-query case), the adaptive refinement loop, polysemous retrieval
+  (MMR diversity), multi-source synthesis, and the disclaim-with-
+  adjacent-fact path.
+
+  Each entry uses the same `expected_topics` / `expect_disclaimer`
+  conventions as `dataset_v0.yaml`, plus four new fields:
+
+    - expected_query_count: int — exact query count the planner should emit.
+    - expected_min_unique_sources: int — minimum distinct URLs in citations.
+    - expected_loop_fired: bool — whether the adaptive loop should fire (iter ≥ 2).
+    - expected_min_citations_in_disclaim: int — for adversarial-with-context
+      questions: disclaim AND cite at least N adjacent facts.
+
+  These fields are independently optional; checks only fire when their
+  field is present in the entry. See `eval/run_eval.py` for the check
+  implementations.
+
+questions:
+
+  # --- Multi-faceted (3-query planner) -----------------------------------
+  - id: stress-multi-001
+    category: multi_faceted
+    question: "What is Gemini Omni, how do you use it, and what are the most significant ways it could change the AI landscape?"
+    expected_topics:
+      - "Gemini Omni"
+    expected_query_count: 3
+    expected_min_unique_sources: 3
+    notes: |
+      Fresh release (announced May 18, 2026). Three distinct facets:
+      definition, usage, impact. Tests (a) whether the planner correctly
+      fans out to 3 queries, (b) whether retrieval surfaces recent
+      coverage of a same-week release, (c) whether the answer synthesizes
+      across at least 3 sources. expected_topics is intentionally minimal
+      because the exact features/use cases aren't predictable yet.
+
+  - id: stress-multi-002
+    category: multi_faceted
+    question: "Compare the architectures, pricing, and benchmark performance of GPT-5, Claude 4, and Gemini 2.5 Pro."
+    expected_topics:
+      - "architecture"
+      - "pricing"
+      - "benchmark"
+    expected_query_count: 3
+    expected_min_unique_sources: 5
+    notes: |
+      Three-entity comparison across three dimensions. Tests whether the
+      planner picks 3 queries (one per dimension, or one per entity) and
+      whether the answer breadth pulls from 5+ sources.
+
+  - id: stress-multi-003
+    category: multi_faceted
+    question: "What are the deployment patterns, security implications, and cost tradeoffs of running LLMs on-prem versus in the cloud?"
+    expected_topics:
+      - "on-prem"
+      - "cloud"
+      - "cost"
+    expected_query_count: 3
+    expected_min_unique_sources: 4
+    notes: |
+      Genuinely three-faceted (deployment, security, cost) and not a
+      simple two-entity comparison. Multi-source synthesis required.
+
+  # --- Refinement-rescue (loop should fire) ------------------------------
+  - id: stress-refine-001
+    category: refinement_rescue
+    question: "What specific exploit was used in the LastPass 2022 customer data breach?"
+    expected_topics:
+      - "LastPass"
+    expected_loop_fired: true
+    notes: |
+      Likely-iter-1 search returns general "LastPass breach" coverage;
+      iter-2 refinement should pivot toward "exploit" / "vector" /
+      "S3 access" specifically. Tests whether the adaptive loop actually
+      rescues a hard-but-answerable question.
+
+  - id: stress-refine-002
+    category: refinement_rescue
+    question: "What were the technical root causes of the 2024 CrowdStrike Windows outage?"
+    expected_topics:
+      - "CrowdStrike"
+    expected_loop_fired: true
+    notes: |
+      Likely-iter-1 returns "global Windows outage" general coverage;
+      iter-2 should pivot to "channel file" / "kernel driver" / "RCA"
+      technical detail.
+
+  - id: stress-refine-003
+    category: refinement_rescue
+    question: "What is the actual maximum context window of Anthropic Claude on the Pro plan as of 2026?"
+    expected_topics:
+      - "Claude"
+      - "context"
+    expected_loop_fired: true
+    notes: |
+      Likely-iter-1 returns marketing pages or general Claude pricing;
+      iter-2 should pivot to technical docs / API reference for the
+      actual numeric limit.
+
+  # --- Polysemous (MMR diversity) ----------------------------------------
+  - id: stress-poly-001
+    category: polysemous
+    question: "How does Mistral work?"
+    expected_topics:
+      - "AI"
+    expected_min_unique_sources: 3
+    notes: |
+      Polysemous: "Mistral" matches (a) Mistral AI the company,
+      (b) the Mediterranean wind, (c) various product names. Tests
+      whether MMR-led selection drives source diversity around the
+      dominant sense (the AI company) while not collapsing onto one
+      page from one site.
+
+  # --- Multi-source synthesis (breadth required) -------------------------
+  - id: stress-synth-001
+    category: multi_source_synthesis
+    question: "What are the differences between Pinecone, Weaviate, Qdrant, and Chroma as vector stores?"
+    expected_topics:
+      - "Pinecone"
+      - "Weaviate"
+      - "Qdrant"
+      - "Chroma"
+    expected_min_unique_sources: 4
+    notes: |
+      Four entities being compared; answer should pull from sources
+      that cover each. Tests whether selection + answer prompt drive
+      breadth, not just relevance-collapse onto one comparison article.
+
+  - id: stress-synth-002
+    category: multi_source_synthesis
+    question: "Which open-source RAG frameworks are most actively maintained in 2026?"
+    expected_topics:
+      - "LangChain"
+      - "LlamaIndex"
+    expected_min_unique_sources: 4
+    notes: |
+      Recency-aware survey question; answer should name multiple
+      frameworks (LangChain, LlamaIndex, Haystack, etc.) and back
+      "actively maintained" with concrete signals (commits, releases).
+
+  # --- Adversarial-with-context (disclaim AND cite adjacent facts) -------
+  - id: stress-disclaim-001
+    category: adversarial_with_context
+    question: "What was Anthropic's Q3 2025 revenue?"
+    expected_topics: []
+    expect_disclaimer: true
+    expected_min_citations_in_disclaim: 1
+    notes: |
+      Anthropic is a private company; specific quarterly revenue is
+      not publicly disclosed. Good answer disclaims AND surfaces
+      adjacent context (annualized revenue estimates, funding rounds,
+      growth coverage) with at least one citation. Tests the
+      "I couldn't find X but here's what I did find [1]" pattern.
+
+  - id: stress-disclaim-002
+    category: adversarial_with_context
+    question: "What is the name of the new Head of AI Safety at OpenAI announced last week?"
+    expected_topics: []
+    expect_disclaimer: true
+    expected_min_citations_in_disclaim: 1
+    notes: |
+      No such announcement is known to exist. Good answer disclaims
+      AND surfaces adjacent context (OpenAI's existing safety org,
+      who currently leads it, recent safety-related news) with at
+      least one citation.
+
+  # --- Genuinely-unanswerable additions (2026-07-16) ---------------------
+  # Added to strengthen the sufficiency judge's true-negative side: the
+  # decided ground-truth set was 7 sufficient / 1 insufficient, so the judge
+  # score could not discriminate (always-TRUE scored 7/8). These four are unanswerable BY
+  # CONSTRUCTION (undisclosed / non-existent / speculative / false-premise),
+  # not merely absent from one frozen corpus, so they hold on a LIVE search
+  # too. Each is deliberately TOPICALLY RICH — a web search returns plenty of
+  # on-topic pages that do not contain the asked-for fact — which is exactly
+  # the trap (topical similarity != answer presence) the judge must catch and
+  # the score heuristic could not.
+  #
+  # These flags are AUTHORING-TIME PRIORS: expect_disclaimer is a prediction that no search will
+  # surface the answer. For an unfillable-by-construction question that
+  # prediction is robust, but if a live run turns one up, that is a FINDING to
+  # record, not an error to hide — and the per-question truth still has to be
+  # read off the chunks the judge actually sees if this set is ever frozen.
+
+  - id: stress-disclaim-003
+    category: adversarial_with_context
+    question: "Exactly how many GPUs did Google use to train Gemini 3 Pro?"
+    expected_topics: []
+    expect_disclaimer: true
+    expected_min_citations_in_disclaim: 1
+    notes: |
+      Unknowable-precision trap. Frontier labs do not disclose exact
+      training-hardware counts; coverage offers estimates, TPU-vs-GPU
+      discussion, and compute speculation, never an authoritative exact
+      number. Search will return abundant on-topic Gemini-training pages —
+      none answering "exactly how many". Good answer disclaims the exact
+      figure AND cites the adjacent context (published compute estimates /
+      hardware discussion). Structurally unanswerable regardless of date.
+
+  - id: stress-disclaim-004
+    category: adversarial_with_context
+    question: "What is the gross margin on OpenAI's ChatGPT consumer subscription business?"
+    expected_topics: []
+    expect_disclaimer: true
+    expected_min_citations_in_disclaim: 1
+    notes: |
+      Private-company, segment-level financial that is not broken out.
+      OpenAI is private and does not report per-product margins; coverage
+      gives overall revenue, losses, and subscriber counts but no ChatGPT
+      consumer gross margin. Topically saturated (endless OpenAI-economics
+      pages), which is the point. Good answer disclaims the specific margin
+      AND cites the adjacent figures it did find. Distinct shape from
+      disclaim-001 (segment margin vs quarterly total).
+
+  - id: stress-disclaim-005
+    category: adversarial_with_context
+    question: "Why did Meta discontinue its open-weight Llama models in 2026?"
+    expected_topics: []
+    expect_disclaimer: true
+    expected_min_citations_in_disclaim: 1
+    notes: |
+      FALSE-PREMISE trap. The premise is untrue — Llama remained an active
+      open-weight line in 2026 (the frozen RAG corpus itself references
+      "Llama 4 ... 10 million tokens of context window", synth-002). Search
+      returns plenty of Llama coverage, none confirming a discontinuation.
+      Good answer does NOT invent a reason: it challenges the premise /
+      disclaims and cites what it found. Tests premise-rejection, a distinct
+      failure mode from a merely-missing fact. (Prior: if the live universe
+      actually discontinued Llama, that is a finding — revisit the flag.)
+
+  - id: stress-disclaim-006
+    category: adversarial_with_context
+    question: "Which company acquired Mistral AI?"
+    expected_topics: []
+    expect_disclaimer: true
+    expected_min_citations_in_disclaim: 1
+    notes: |
+      Speculative / not-on-record. Mistral was an independent French startup
+      through 2026 (corroborated by the frozen poly-001 corpus). No
+      acquisition is on record; search returns Mistral funding/partnership
+      coverage and M&A speculation, no confirmed acquirer. Good answer
+      disclaims the acquisition AND cites the adjacent context (independence,
+      funding, partners). (Prior: an acquisition later on record is a
+      finding, not a bug — flip the flag then.)

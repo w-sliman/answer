@@ -1,0 +1,146 @@
+version: v0
+description: >
+  Initial eval set for Answer v0. 15 questions spread across six shapes:
+  definitional, time-sensitive, biographical, comparative, technical_howto,
+  adversarial. Each entry's `expected_topics` is a list of substrings we
+  expect to appear (case-insensitive) in a good answer — NOT a gold
+  reference answer. Adversarial entries set `expect_disclaimer: true` to
+  flag that a good answer says "the sources don't have this" rather than
+  hallucinating.
+
+questions:
+  # --- Definitional -----------------------------------------------------
+  - id: def-001
+    category: definitional
+    question: "what is langgraph?"
+    expected_topics:
+      - "langchain"
+      - "graph"
+      - "agent"
+    notes: "Foundational definitional question, well-covered on the open web."
+
+  - id: def-002
+    category: definitional
+    question: "what is the crawl4ai library?"
+    expected_topics:
+      - "crawl"
+      - "llm"
+    notes: "Should find GitHub or PyPI page."
+
+  - id: def-003
+    category: definitional
+    question: "what is retrieval-augmented generation?"
+    expected_topics:
+      - "retrieval"
+      - "language model"
+    notes: "Foundational RAG concept; many sources."
+
+  # --- Time-sensitive ---------------------------------------------------
+  - id: time-001
+    category: time-sensitive
+    question: "what are the main competitors to anthropic in enterprise AI right now?"
+    expected_topics:
+      - "OpenAI"
+      - "Google"
+    notes: "Verifies query gen appends year qualifier."
+
+  - id: time-002
+    category: time-sensitive
+    question: "what is the latest stable version of python?"
+    expected_topics:
+      - "python"
+      - "3."
+    notes: "Quick definite answer; tests recency-awareness."
+
+  - id: time-003
+    category: time-sensitive
+    question: "who is the current ceo of anthropic?"
+    expected_topics:
+      - "Dario"
+      - "Amodei"
+    notes: "Specific time-sensitive fact."
+
+  # --- Biographical -----------------------------------------------------
+  - id: bio-001
+    category: biographical
+    question: "who founded huggingface and when was it founded?"
+    expected_topics:
+      - "Delangue"
+      - "2016"
+    notes: "Specific biographical facts."
+
+  - id: bio-002
+    category: biographical
+    question: "who is yann lecun and what is he known for?"
+    expected_topics:
+      - "Meta"
+      - "deep learning"
+    notes: "Well-documented figure; tests synthesis from a bio source."
+
+  # --- Comparative ------------------------------------------------------
+  - id: comp-001
+    category: comparative
+    question: "how does langgraph differ from langchain?"
+    expected_topics:
+      - "graph"
+      - "chain"
+    notes: "Tests synthesis from multiple sources."
+
+  - id: comp-002
+    category: comparative
+    question: "what is the difference between RAG and fine-tuning a language model?"
+    expected_topics:
+      - "retrieval"
+      - "training"
+    notes: "Conceptual comparison; tests structured contrast."
+
+  # --- Technical how-to -------------------------------------------------
+  - id: tech-001
+    category: technical_howto
+    question: "how does crawl4ai handle javascript-rendered pages?"
+    expected_topics:
+      - "playwright"
+      - "browser"
+    notes: "Specific implementation detail."
+
+  - id: tech-002
+    category: technical_howto
+    question: "how do you stream tokens with langchain-ollama?"
+    expected_topics:
+      - "stream"
+      - "ChatOllama"
+    notes: "Practical how-to question."
+
+  # --- Adversarial ------------------------------------------------------
+  - id: adv-001
+    category: adversarial
+    question: "what was the topic of the keynote at the kidocode 2026 alumni dinner?"
+    expected_topics: []
+    expect_disclaimer: true
+    notes: "Fictional event with no findable record. Good answer disclaims."
+
+  - id: adv-002
+    category: adversarial
+    question: "what was the title of the unpublished research paper that anthropic intern alex chen completed in summer 2025?"
+    expected_topics: []
+    expect_disclaimer: true
+    notes: |
+      Fictional intern and paper. Replaces the original "secret name of next
+      Anthropic model" which became answerable in March 2026 when Claude
+      Mythos / Capybara was confirmed via leak — adversarial datasets need
+      maintenance as confidential things become public. Tests disclaimer
+      behavior on unverifiable claims tied to specific-but-fictional people.
+
+  - id: adv-003
+    category: adversarial
+    question: "what is the internal codename for the experimental research project that kidocode's machine learning team started in september 2024?"
+    expected_topics: []
+    expect_disclaimer: true
+    notes: |
+      Replaces the original "openai admin dashboard api token" question
+      which started reliably mapping to real public OpenAI Admin API docs
+      and was no longer adversarial (same staleness pattern as the
+      original adv-002). This version is a fictional internal codename
+      tied to specific-but-fake org/team/date detail. Tests disclaimer
+      behavior on unverifiable specifics that look plausible but have no
+      public footprint.

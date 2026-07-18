@@ -1,0 +1,55 @@
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+.env
+.env.local
+
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+traces/*.json
+traces/*.md
+!traces/.gitkeep
+
+# Eval run outputs are throwaway scratch (per-run reports, annotation dumps,
+# scored JSON). Ignore everything under reports except the .gitkeep.
+eval/reports/*
+!eval/reports/.gitkeep
+
+# Answer-stage replay outputs — iteration scratch, not artifacts of record.
+eval/replays/*.json
+!eval/replays/.gitkeep
+
+# corpus_playground.py output -- frozen {question, queries, pages} fixtures
+# for downstream stage playgrounds (chunking, retrieval) to load without
+# re-searching/re-fetching. Regeneratable, not an artifact of record.
+eval/fixtures/*.json
+!eval/fixtures/.gitkeep
+
+vector_store/
+
+.claude/
+CLAUDE.md
+
+# Third-party reference material kept on disk for local convenience —
+# not committed because it's just copies from other projects' repos.
+docs/DDGS*
+docs/crawl4ai*
+# Personal Ollama-on-Colab serving notebook; kept locally, not shared.
+docs/serving_gemma_4_from_ollama_in_colab.py
+
+.DS_Store
+Thumbs.db
+
+# Local-only archive (old fixtures, scratch) — never uploaded to GitHub
+archive/
+
+# Freeze recipe notebook — kept LOCAL for re-freezing, not shipped in the repo
+demo/colab_freeze.ipynb
